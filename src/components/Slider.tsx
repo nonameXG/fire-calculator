@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 
 interface SliderProps {
   label: string;
@@ -9,7 +9,8 @@ interface SliderProps {
   onChange: (value: number) => void;
   prefix?: string;
   format?: (value: number) => string;
-  hint?: string;
+  badge?: (value: number) => string;
+  suffix?: string;
 }
 
 export default function Slider({
@@ -19,15 +20,14 @@ export default function Slider({
   max,
   step,
   onChange,
-  prefix,
   format,
-  hint,
+  badge,
+  suffix,
 }: SliderProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(String(value));
 
-  const display = format ? format(value) : `${prefix ?? ""}${value.toLocaleString("en-US")}`;
+  const display = format ? format(value) : value.toLocaleString("en-US");
 
   const commit = useCallback(
     (raw: string) => {
@@ -43,11 +43,14 @@ export default function Slider({
   );
 
   const percent = ((value - min) / (max - min)) * 100;
+  const badgeText = badge ? badge(value) : null;
 
   return (
-    <div className="group">
-      <div className="flex items-baseline justify-between mb-2">
-        <label className="text-sm font-medium text-slate-700">{label}</label>
+    <div className="group py-3">
+      <div className="flex items-center justify-between mb-2.5">
+        <label className="text-[11px] font-medium uppercase tracking-[0.14em] text-zinc-500">
+          {label}
+        </label>
         {isEditing ? (
           <input
             autoFocus
@@ -67,7 +70,7 @@ export default function Slider({
                 setIsEditing(false);
               }
             }}
-            className="w-28 text-right text-lg font-semibold tabular-nums text-emerald-700 bg-emerald-50 rounded px-2 py-0.5 outline-none ring-2 ring-emerald-300"
+            className="w-32 text-right text-base font-semibold tabular-nums text-jade-400 bg-obsidian-800 rounded-md px-2 py-1 outline-none ring-1 ring-jade-500/50"
           />
         ) : (
           <button
@@ -76,36 +79,49 @@ export default function Slider({
               setDraft(String(value));
               setIsEditing(true);
             }}
-            className="text-lg font-semibold tabular-nums text-emerald-700 hover:text-emerald-800 transition-colors cursor-text rounded px-1"
+            className="text-base font-semibold tabular-nums text-zinc-100 hover:text-jade-400 transition-colors cursor-text rounded px-1"
             title="Click to type a value"
           >
             {display}
+            {suffix && <span className="text-zinc-500 ml-1 text-sm font-normal">{suffix}</span>}
           </button>
         )}
       </div>
-      <input
-        ref={inputRef}
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="fire-range w-full"
-        style={
-          {
-            "--pct": `${percent}%`,
-          } as React.CSSProperties
-        }
-      />
-      <div className="flex justify-between mt-1">
-        <span className="text-[11px] text-slate-400">
-          {prefix ?? ""}{min.toLocaleString("en-US")}
-        </span>
-        {hint && <span className="text-[11px] text-slate-400">{hint}</span>}
-        <span className="text-[11px] text-slate-400">
-          {prefix ?? ""}{max.toLocaleString("en-US")}
-        </span>
+
+      {/* Slim indicator bar with glowing fill */}
+      <div className="relative flex items-center h-3">
+        <div className="absolute inset-x-0 h-px bg-obsidian-700" />
+        <div
+          className="absolute h-px bg-gradient-to-r from-jade-600 to-jade-400"
+          style={{ width: `${percent}%`, boxShadow: "0 0 8px rgba(52, 211, 153, 0.5)" }}
+        />
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={(e) => onChange(Number(e.target.value))}
+          className="prem-range relative z-10"
+          aria-label={label}
+        />
+        {/* Micro-badge floating above thumb */}
+        {badgeText && (
+          <div
+            className="pointer-events-none absolute -top-7 z-20 -translate-x-1/2 transition-opacity duration-150 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
+            style={{ left: `${percent}%` }}
+          >
+            <div className="px-2 py-0.5 rounded-md bg-obsidian-800 border border-obsidian-700 text-[10px] font-medium text-jade-400 whitespace-nowrap shadow-lg">
+              {badgeText}
+            </div>
+            <div className="w-1.5 h-1.5 rotate-45 bg-obsidian-800 border-r border-b border-obsidian-700 mx-auto -mt-[3px]" />
+          </div>
+        )}
+      </div>
+
+      <div className="flex justify-between mt-1.5">
+        <span className="text-[10px] text-zinc-600 tabular-nums">{min.toLocaleString("en-US")}</span>
+        <span className="text-[10px] text-zinc-600 tabular-nums">{max.toLocaleString("en-US")}</span>
       </div>
     </div>
   );
